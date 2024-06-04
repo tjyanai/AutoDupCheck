@@ -3,192 +3,169 @@
 
 <body>
   <p1 style="font-weight: bold; font-size: large;">.CSV Processes</p1><br><br>
-  <p1>
-    <input type="file" id="csvFile" accept=".csv">
-    </div><br><br>
-    <div>
-      <button id="dailySales">Daily Sales</button><br><br>
-      <button id="duplicatePOs">Duplicate POs</button>
-    </div><br>
-    <div id="log"></div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.2/FileSaver.min.js"></script>
-    <script>
-      const logElement = document.getElementById('log');
-      const log = (message) => {
-        logElement.innerHTML += '<strong>' + message + '</strong><br><br>';
-      };
+  <input type="file" id="csvFile" accept=".csv"><br><br>
+  <button id="dailySales">Daily Sales</button><br><br>
+  <button id="duplicatePOs">Duplicate POs</button><br><br>
+  <div id="log"></div>
 
-      document.getElementById('dailySales').addEventListener('click', () => {
-        // Clear the log
-        logElement.innerHTML = '';
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.2/FileSaver.min.js"></script>
 
-        // Remove the previous table if it exists
-        const oldTable = document.querySelector('table');
-        if (oldTable) {
-          oldTable.remove();
-        }
+  <script>
+    const logElement = document.getElementById('log');
+    const log = (message) => {
+      logElement.innerHTML += '<strong>' + message + '</strong><br><br>';
+    };
 
-        const file = document.getElementById('csvFile').files[0];
-        if (!file) {
-          alert("Please upload a .csv file");
-          return;
-        }
+    document.getElementById('dailySales').addEventListener('click', processFile);
+    document.getElementById('duplicatePOs').addEventListener('click', processFile);
 
-        Papa.parse(file, {
-          header: true,
-          complete: function (results) {
-            let data = results.data;
+    function processFile() {
+      logElement.innerHTML = '';
+      const oldTables = document.querySelectorAll('table');
+      oldTables.forEach(table => table.remove());
 
-            // Remove unwanted columns
-            data = data.map(row => {
-              Object.keys(row).forEach(key => {
-                const colIndex = results.meta.fields.indexOf(key);
-                if ((colIndex >= 0 && colIndex <= 9) || (colIndex >= 21 && colIndex <= 32) || (colIndex >= 36 && colIndex <= 40)) {
-                  delete row[key];
-                }
-              });
-              row.Profit = parseFloat(row.Profit);
-              return row;
-            }).filter(row => !isNaN(row.Profit));
-
-            // Sort by 'Profit'
-            data.sort((a, b) => b.Profit - a.Profit);
-
-            // Get the top 12 rows
-            const topRows = data.slice(0, 11);
-
-            log('Daily Sales');
-
-            // Create a table for the top rows
-            createTable(topRows);
-
-            // Sort by 'Profit' in ascending order
-            data.sort((a, b) => a.Profit - b.Profit);
-
-            // Get the bottom 12 rows
-            const bottomRows = data.slice(0, 11);
-
-            // Create a table for the bottom rows
-            createTable(bottomRows);
-          }
-        });
-      });
-
-      document.getElementById('duplicatePOs').addEventListener('click', () => {
-        // Clear the log
-        logElement.innerHTML = '';
-
-        // Remove the previous table if it exists
-        const oldTable = document.querySelector('table');
-        if (oldTable) {
-          oldTable.remove();
-        }
-
-        const file = document.getElementById('csvFile').files[0];
-        if (!file) {
-          alert("Please upload a .csv file");
-          return;
-        }
-
-        Papa.parse(file, {
-          header: true,
-          complete: function (results) {
-            let data = results.data.filter(row => row['Total Cost'] > 0); // Remove rows with 'Total Cost' <= 0
-            const duplicateMap = {}; // Map to track duplicates
-            let duplicates = []; // Array to store duplicate rows
-
-            // Check each row for duplicates
-            data.forEach(row => {
-              // Convert the specific columns to a string so it can be used as a key in the map
-              const rowString = JSON.stringify({
-                'Event Name': row['Event Name'],
-                'Event Date/Time': row['Event Date/Time'],
-                'Section': row['Section'],
-                'Row': row['Row'],
-                'Seat From': row['Seat From'],
-                'Seat To': row['Seat To']
-              });
-
-              // If the row is already in the map, mark it as a duplicate
-              if (duplicateMap[rowString]) {
-                // Mark the original row as a duplicate and add it to the duplicates array
-                duplicateMap[rowString]['Result'] = 'DUPLICATE';
-                duplicates.push(duplicateMap[rowString]);
-                // Mark the current row as a duplicate and add it to the duplicates array
-                row['Result'] = 'DUPLICATE';
-                duplicates.push(row);
-              } else {
-                // Otherwise, add it to the map and mark it as 'ok'
-                duplicateMap[rowString] = row;
-                row['Result'] = 'ok';
-              }
-              delete row['PO Hyperlink']; // Delete the old 'PO Hyperlink' key
-            });
-
-            if (duplicates.length > 0) {
-              log('Duplicates found!!!');
-              createTable(duplicates);
-              saveCSV(duplicates, "duplicates.csv");
-            } else {
-              // Sort rows by 'Total Cost' in ascending order
-              data.sort((a, b) => a['Total Cost'] - b['Total Cost']);
-              data = data.filter((row, index, self) =>
-                self.some((otherRow) => otherRow !== row && otherRow['Total Cost'] === row['Total Cost'])
-              );
-
-              log(`No duplicates found on ${new Date().toLocaleString()}`);
-              saveCSV(data, "noDuplicates.csv");
-            }
-          }
-        });
-      });
-
-      // Creates a table to show the duplicate rows in browser
-      function createTable(data) {
-        const table = document.createElement('table');
-        //table.style.width = '100%';
-        table.style.borderCollapse = 'collapse';
-
-        const thead = document.createElement('thead');
-        const headerRow = document.createElement('tr');
-        Object.keys(data[0]).forEach(key => {
-          const th = document.createElement('th');
-          th.textContent = key;
-          th.style.border = '1px solid black';
-          th.style.padding = '5px';
-          headerRow.appendChild(th);
-        });
-        thead.appendChild(headerRow);
-        table.appendChild(thead);
-
-        const tbody = document.createElement('tbody');
-        data.forEach(row => {
-          const tr = document.createElement('tr');
-          Object.values(row).forEach(value => {
-            const td = document.createElement('td');
-            td.textContent = value;
-            td.style.border = '1px solid black';
-            td.style.padding = '5px';
-            tr.appendChild(td);
-          });
-          tbody.appendChild(tr);
-        });
-        table.appendChild(tbody);
-        document.body.appendChild(table);
-
-        // Add a line break
-        const breakElement = document.createElement('br');
-        document.body.appendChild(breakElement);
+      const file = document.getElementById('csvFile').files[0];
+      if (!file) {
+        alert("Please upload a .csv file");
+        return;
       }
 
-      // Saves the array to a .csv file
-      function saveCSV(data, filename) {
-        const csv = Papa.unparse(data);
-        const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-        saveAs(blob, filename);
+      Papa.parse(file, {
+        header: true,
+        complete: this.id === 'dailySales' ? processDailySales : processDuplicatePOs
+      });
+    }
+
+    function processDailySales(results) {
+      let data = results.data;
+
+      // Remove unwanted columns
+      data = data.map(row => {
+        Object.keys(row).forEach(key => {
+          const colIndex = results.meta.fields.indexOf(key);
+          if ((colIndex >= 0 && colIndex <= 9) || (colIndex >= 21 && colIndex <= 32) || (colIndex >= 36 && colIndex <= 40)) {
+            delete row[key];
+          }
+        });
+        row.Profit = parseFloat(row.Profit);
+        return row;
+      }).filter(row => !isNaN(row.Profit));
+
+      // Sort by 'Profit'
+      data.sort((a, b) => b.Profit - a.Profit);
+
+      // Get the top 12 rows
+      const topRows = data.slice(0, 11);
+
+      log('Daily Sales');
+
+      // Create a table for the top rows
+      createTable(topRows);
+
+      // Sort by 'Profit' in ascending order
+      data.sort((a, b) => a.Profit - b.Profit);
+
+      // Get the bottom 12 rows
+      const bottomRows = data.slice(0, 11);
+
+      // Create a spacer
+      const spacer = document.createElement('div');
+      spacer.style.height = '20px';
+      document.body.appendChild(spacer);
+
+      // Create a table for the bottom rows
+      createTable(bottomRows);
+    }
+
+    function processDuplicatePOs(results) {
+      let data = results.data.filter(row => row['Total Cost'] > 0); // Remove rows with 'Total Cost' <= 0
+      const duplicateMap = {}; // Map to track duplicates
+      let duplicates = []; // Array to store duplicate rows
+
+      // Check each row for duplicates
+      data.forEach(row => {
+        // Convert the specific columns to a string so it can be used as a key in the map
+        const rowString = JSON.stringify({
+          'Event Name': row['Event Name'],
+          'Event Date/Time': row['Event Date/Time'],
+          'Section': row['Section'],
+          'Row': row['Row'],
+          'Seat From': row['Seat From'],
+          'Seat To': row['Seat To']
+        });
+
+        // If the row is already in the map, mark it as a duplicate
+        if (duplicateMap[rowString]) {
+          // Mark the original row as a duplicate and add it to the duplicates array
+          duplicateMap[rowString]['Result'] = 'DUPLICATE';
+          duplicates.push(duplicateMap[rowString]);
+          // Mark the current row as a duplicate and add it to the duplicates array
+          row['Result'] = 'DUPLICATE';
+          duplicates.push(row);
+        } else {
+          // Otherwise, add it to the map and mark it as 'ok'
+          duplicateMap[rowString] = row;
+          row['Result'] = 'ok';
+        }
+        delete row['PO Hyperlink']; // Delete the old 'PO Hyperlink' key
+      });
+
+      if (duplicates.length > 0) {
+        log('Duplicates found!!!');
+        createTable(duplicates);
+        saveCSV(duplicates, "duplicates.csv");
+      } else {
+        // Sort rows by 'Total Cost' in ascending order
+        data.sort((a, b) => a['Total Cost'] - b['Total Cost']);
+        data = data.filter((row, index, self) =>
+          self.some((otherRow) => otherRow !== row && otherRow['Total Cost'] === row['Total Cost'])
+        );
+
+        log(`No duplicates found on ${new Date().toLocaleString()}`);
+        saveCSV(data, "noDuplicates.csv");
       }
-    </script>
+    }
+
+    function createTable(data) {
+      const table = document.createElement('table');
+      //table.style.width = '100%';
+      table.style.borderCollapse = 'collapse';
+
+      const thead = document.createElement('thead');
+      const headerRow = document.createElement('tr');
+      Object.keys(data[0]).forEach(key => {
+        const th = document.createElement('th');
+        th.textContent = key;
+        th.style.border = '1px solid black';
+        th.style.padding = '5px';
+        headerRow.appendChild(th);
+      });
+      thead.appendChild(headerRow);
+      table.appendChild(thead);
+
+      const tbody = document.createElement('tbody');
+      data.forEach(row => {
+        const tr = document.createElement('tr');
+        Object.values(row).forEach(value => {
+          const td = document.createElement('td');
+          td.textContent = value;
+          td.style.border = '1px solid black';
+          td.style.padding = '5px';
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      document.body.appendChild(table);
+    }
+
+    function saveCSV(data, filename) {
+      const csv = Papa.unparse(data);
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      saveAs(blob, filename);
+    }
+  </script>
 </body>
 
 </html>

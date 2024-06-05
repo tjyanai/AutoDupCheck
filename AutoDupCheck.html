@@ -2,15 +2,15 @@
 <html>
 
 <body>
-  <p1 style="font-weight: bold; font-size: large; margin-left: 50px;">.CSV Processor</p1><br><br>
+  <div style="font-weight: bold; font-size: large; margin-left: 65px;">.CSV Processor</div><br>
   <div id="drop_zone" ondrop="dropHandler(event);" ondragover="dragOverHandler(event);"
-    style="border: 2px dashed #bbb; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; padding: 10px; text-align: center; color: #000000; width: 200px; cursor: pointer;">
+    style="border: 2px dashed #bbb; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; padding: 10px; text-align: center; color: #000000; width: 230px; cursor: pointer;">
     Drop .CSV here
     <hr> Or click here to upload
     <input type="file" id="csvFile" accept=".csv" style="display: none;" onchange="fileSelected(event);">
   </div><br>
-  <button id="dailySales" style="cursor: pointer; margin-right: 20px;">Sort Daily Sales</button>
-  <button id="duplicatePOs" style="cursor: pointer;">Check for Duplicates</button><br>
+  <button id="dailySales" style="cursor: pointer; margin-right: 20px; width: 115px;">Sort Daily Sales</button>
+  <button id="duplicatePOs" style="cursor: pointer; width: 115px;">Duplicate Check</button><br>
   <div id="log"></div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
@@ -21,7 +21,7 @@
 
     function fileSelected(ev) {
       var file = ev.target.files[0]; // get the selected file
-      lineBreakCount = 5;
+      lineBreakCount = 4;
       clearPreviousData(lineBreakCount)
       logElement.innerHTML = ''; // Clear the log
       log('<br>File uploaded = ' + file.name + '<br>'); // log the file name
@@ -30,7 +30,7 @@
     function dropHandler(ev) {
       // Prevent default behavior (Prevent file from being opened)
       ev.preventDefault();    
-      lineBreakCount = 5;
+      lineBreakCount = 4;
       clearPreviousData(lineBreakCount)
       logElement.innerHTML = ''; // Clear the log
       log('<br>File uploaded = ');

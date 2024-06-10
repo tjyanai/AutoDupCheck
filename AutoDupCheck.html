@@ -99,13 +99,9 @@
             delete row[key];
           }
         });
-        // Delete the row if 'Cost' is 0
-        // if (row['Cost'] === 0) {
-        //   delete row;
-        // }
         row.Profit = parseFloat(row.Profit);
         return row;
-      }).filter(row => !isNaN(row.Profit));
+      }).filter(row => !isNaN(row.Profit) && Number(row['Cost']) !== 0); // Remove rows with 'Profit' as NaN and 'Cost' as 0
 
       // Sort by 'Profit'
       data.sort((a, b) => b.Profit - a.Profit);
@@ -183,7 +179,7 @@
         // );
 
         log(`<br>No duplicates found on ${new Date().toLocaleString()}`);
-        //saveCSV(data, "noDuplicates.csv");
+        // saveCSV(data, "noDuplicates.csv");
       }
     }
 

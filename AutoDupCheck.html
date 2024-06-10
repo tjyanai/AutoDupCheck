@@ -29,7 +29,7 @@
 
     function dropHandler(ev) {
       // Prevent default behavior (Prevent file from being opened)
-      ev.preventDefault();    
+      ev.preventDefault();
       lineBreakCount = 4;
       clearPreviousData(lineBreakCount)
       logElement.innerHTML = ''; // Clear the log
@@ -99,6 +99,10 @@
             delete row[key];
           }
         });
+        // Delete the row if 'Cost' is 0
+        // if (row['Cost'] === 0) {
+        //   delete row;
+        // }
         row.Profit = parseFloat(row.Profit);
         return row;
       }).filter(row => !isNaN(row.Profit));
@@ -130,46 +134,56 @@
       let duplicates = []; // Array to store duplicate rows
 
       // Check each row for duplicates
-      data.forEach(row => {
-        // Convert the specific columns to a string so it can be used as a key in the map
-        const rowString = JSON.stringify({
-          'Event Name': row['Event Name'],
-          'Event Date/Time': row['Event Date/Time'],
-          'Section': row['Section'],
-          'Row': row['Row'],
-          'Seat From': row['Seat From'],
-          'Seat To': row['Seat To']
-        });
+      data.forEach((row, index) => {
+        // row['Result'] = 'ok';
+        delete row['PO Hyperlink'];
 
-        // If the row is already in the map, mark it as a duplicate
-        if (duplicateMap[rowString]) {
-          // Mark the original row as a duplicate and add it to the duplicates array
-          duplicateMap[rowString]['Result'] = 'DUPLICATE';
-          duplicates.push(duplicateMap[rowString]);
-          // Mark the current row as a duplicate and add it to the duplicates array
-          row['Result'] = 'DUPLICATE';
-          duplicates.push(row);
-        } else {
-          // Otherwise, add it to the map and mark it as 'ok'
-          duplicateMap[rowString] = row;
-          row['Result'] = 'ok';
+        // Iterate over the range of seats
+        for (let seat = row['Seat From']; seat <= row['Seat To']; seat++) {
+          // Create a key for the current row
+          const rowString = JSON.stringify({
+            'Event Name': row['Event Name'],
+            'Event Date/Time': row['Event Date/Time'],
+            'Section': row['Section'],
+            'Row': row['Row'],
+            'Seat': seat.toString()
+          });
+
+          // If the row is already in the map, mark it as a duplicate
+          if (duplicateMap[rowString]) {
+            // Add the original row to the duplicates array if it hasn't been added yet
+            if (!duplicateMap[rowString]['isDuplicate']) {
+              duplicateMap[rowString]['isDuplicate'] = true;
+              // data[duplicateMap[rowString]['index']]['Result'] = 'DUPLICATE';
+              duplicates.push(data[duplicateMap[rowString]['index']]);
+            }
+
+            // Mark the current row as a duplicate
+            // row['Result'] = 'DUPLICATE';
+
+            // Add the current row to the duplicates array
+            duplicates.push(row);
+            break;
+          } else {
+            // Otherwise, add it to the map
+            duplicateMap[rowString] = { 'index': index };
+          }
         }
-        delete row['PO Hyperlink']; // Delete the old 'PO Hyperlink' key
       });
 
       if (duplicates.length > 0) {
         log('<br>Duplicates found!!!');
         createTable(duplicates);
-        saveCSV(duplicates, "duplicates.csv");
+        // saveCSV(duplicates, "duplicates.csv");
       } else {
         // Sort rows by 'Total Cost' in ascending order
-        data.sort((a, b) => a['Total Cost'] - b['Total Cost']);
-        data = data.filter((row, index, self) =>
-          self.some((otherRow) => otherRow !== row && otherRow['Total Cost'] === row['Total Cost'])
-        );
+        // data.sort((a, b) => a['Total Cost'] - b['Total Cost']);
+        // data = data.filter((row, index, self) =>
+        //   self.some((otherRow) => otherRow !== row && otherRow['Total Cost'] === row['Total Cost'])
+        // );
 
         log(`<br>No duplicates found on ${new Date().toLocaleString()}`);
-        saveCSV(data, "noDuplicates.csv");
+        //saveCSV(data, "noDuplicates.csv");
       }
     }
 
@@ -212,12 +226,12 @@
     function clearPreviousData(lineCount) {
       // Remove any previous tables
       const tables = document.getElementsByTagName('table');
-      while(tables[0]) tables[0].parentNode.removeChild(tables[0]);
+      while (tables[0]) tables[0].parentNode.removeChild(tables[0]);
 
       // Remove any previous line breaks
       const lineBreaks = document.getElementsByTagName('br');
-      while(lineBreaks[lineCount]) 
-      lineBreaks[lineCount].parentNode.removeChild(lineBreaks[lineCount]);
+      while (lineBreaks[lineCount])
+        lineBreaks[lineCount].parentNode.removeChild(lineBreaks[lineCount]);
     }
 
     function saveCSV(data, filename) {

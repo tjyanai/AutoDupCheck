@@ -129,82 +129,51 @@
       const duplicateMap = {}; // Map to track duplicates
       let duplicates = []; // Array to store duplicate rows
 
-      // // Check each row for duplicates
-      // data.forEach((row, index) => {
-      //   // row['Result'] = 'ok';
-      //   delete row['PO Hyperlink'];
+      // Check each row for duplicates
+      data.forEach((row, index) => {
+        delete row['PO Hyperlink'];
 
-      //   // Iterate over the range of seats
-      //   for (let seat = row['Seat From']; seat <= row['Seat To']; seat++) {
-      //     // Create a key for the current row
-      //     const rowString = JSON.stringify({
-      //       'Event Name': row['Event Name'],
-      //       'Event Date/Time': row['Event Date/Time'],
-      //       'Section': row['Section'],
-      //       'Row': row['Row'],
-      //       'Seat': seat.toString()
-      //     });
+        // Convert 'Seat From' and 'Seat To' to numbers
+        const seatFrom = Number(row['Seat From']);
+        const seatTo = Number(row['Seat To']);
 
-      //     // If the row is already in the map, mark it as a duplicate
-      //     if (duplicateMap[rowString]) {
-      //       // Add the original row to the duplicates array if it hasn't been added yet
-      //       if (!duplicateMap[rowString]['isDuplicate']) {
-      //         duplicateMap[rowString]['isDuplicate'] = true;
-      //         // data[duplicateMap[rowString]['index']]['Result'] = 'DUPLICATE';
-      //         duplicates.push(data[duplicateMap[rowString]['index']]);
-      //       }
+        // Iterate over the range of seats
+        for (let seat = seatFrom; seat <= seatTo; seat++) {
+          // Convert the seat number to a string and pad it with zeros if necessary
+          const seatString = seat.toString().padStart(2, '0');
 
-      //       // Mark the current row as a duplicate
-      //       // row['Result'] = 'DUPLICATE';
+          // Create a key for the current row
+          const rowString = JSON.stringify({
+            'Event Name': row['Event Name'],
+            'Event Date/Time': row['Event Date/Time'],
+            'Section': row['Section'],
+            'Row': row['Row'],
+            'Seat': seatString
+          });
 
-      //       // Add the current row to the duplicates array
-      //       duplicates.push(row);
-      //       break;
-      //     } else {
-      //       // Otherwise, add it to the map
-      //       duplicateMap[rowString] = { 'index': index };
-      //     }
-      //   }
-      // });
+          // If the row is already in the map, mark it as a duplicate
+          if (duplicateMap[rowString]) {
+            // Add the original row to the duplicates array if it hasn't been added yet
+            if (!duplicateMap[rowString]['isDuplicate']) {
+              duplicateMap[rowString]['isDuplicate'] = true;
+              duplicates.push(data[duplicateMap[rowString]['index']]);
+            }
 
-            // Check each row for duplicates
-            data.forEach(row => {
-        // Convert the specific columns to a string so it can be used as a key in the map
-        const rowString = JSON.stringify({
-          'Event Name': row['Event Name'],
-          'Event Date/Time': row['Event Date/Time'],
-          'Section': row['Section'],
-          'Row': row['Row'],
-          'Seat From': row['Seat From'],
-          'Seat To': row['Seat To']
-        });
-
-        // If the row is already in the map, mark it as a duplicate
-        if (duplicateMap[rowString]) {
-          // Mark the original row as a duplicate and add it to the duplicates array
-          duplicates.push(duplicateMap[rowString]);
-          // Mark the current row as a duplicate and add it to the duplicates array
-          duplicates.push(row);
-        } else {
-          // Otherwise, add it to the map and mark it as 'ok'
-          duplicateMap[rowString] = row;
+            // Add the current row to the duplicates array
+            duplicates.push(row);
+            break;
+          } else {
+            // Otherwise, add it to the map
+            duplicateMap[rowString] = { 'index': index, 'Seat': seatString };
+          }
         }
-        delete row['PO Hyperlink']; // Delete the old 'PO Hyperlink' key
       });
 
       if (duplicates.length > 0) {
-        log('<br>Duplicates found!!!');
+        log('<br>Duplicate seats found!!!');
         createTable(duplicates);
-        // saveCSV(duplicates, "duplicates.csv");
       } else {
-        // Sort rows by 'Total Cost' in ascending order
-        // data.sort((a, b) => a['Total Cost'] - b['Total Cost']);
-        // data = data.filter((row, index, self) =>
-        //   self.some((otherRow) => otherRow !== row && otherRow['Total Cost'] === row['Total Cost'])
-        // );
-
-        log(`<br>No duplicates found on ${new Date().toLocaleString()}`);
-        // saveCSV(data, "noDuplicates.csv");
+        log(`<br>No duplicates found on ${new Date().toLocaleString("en-US", {timeZone: "America/Los_Angeles"})} PST`);
       }
     }
 

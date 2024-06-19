@@ -125,7 +125,7 @@
     }
 
     function processDuplicatePOs(results) {
-      let data = results.data.filter(row => row['Total Cost'] > -1); // Remove rows with 'Total Cost' <= 0
+      let data = results.data.filter(row => row['Total Cost'] > 0); // Remove rows with 'Total Cost' <= 0
       const duplicateMap = {}; // Map to track duplicates
       let duplicates = []; // Array to store duplicate rows
 
@@ -147,7 +147,7 @@
             'Event Name': row['Event Name'],
             'Event Date/Time': row['Event Date/Time'],
             'Section': row['Section'],
-            //'Row': row['Row'],
+            'Row': row['Row'],
             'Seat': seatString
           });
 

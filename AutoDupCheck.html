@@ -95,7 +95,7 @@
       data = data.map(row => {
         Object.keys(row).forEach(key => {
           const colIndex = results.meta.fields.indexOf(key);
-          if ((colIndex >= 0 && colIndex <= 9) || (colIndex >= 21 && colIndex <= 32) || (colIndex >= 36 && colIndex <= 40)) {
+          if ((colIndex >= 0 && colIndex <= 9) || (colIndex >= 21 && colIndex <= 33) || (colIndex >= 37 && colIndex <= 41)) {
             delete row[key];
           }
         });

@@ -1,235 +1,336 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CSV Processor</title>
+  <style>
+    .container {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+      margin-left: 50px;
+    }
+
+    .button-container {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      width: 275px;
+      /* Adjust the width as needed */
+    }
+
+    .button-container button {
+      width: 125px;
+      height: 40px;
+      cursor: pointer;
+    }
+
+    .bold-button {
+      font-weight: bold;
+    }
+
+    #drop_zone {
+      border: 2px dashed #bbb;
+      border-radius: 5px;
+      padding: 10px;
+      text-align: center;
+      color: #000000;
+      width: 390px;
+      cursor: pointer;
+    }
+  </style>
+</head>
 
 <body>
-  <div style="font-weight: bold; font-size: large; margin-left: 65px;">.CSV Processor</div><br>
-  <div id="drop_zone" ondrop="dropHandler(event);" ondragover="dragOverHandler(event);"
-    style="border: 2px dashed #bbb; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; padding: 10px; text-align: center; color: #000000; width: 230px; cursor: pointer;">
-    Drop .CSV here
-    <hr> Or click here to upload
-    <input type="file" id="csvFile" accept=".csv" style="display: none;" onchange="fileSelected(event);">
-  </div><br>
-  <button id="dailySales" style="cursor: pointer; margin-right: 20px; width: 115px;">Sort Daily Sales</button>
-  <button id="duplicatePOs" style="cursor: pointer; width: 115px;">Duplicate Audit</button><br>
-  <div id="log"></div>
+  <div class="container">
+    <div style="font-weight: bold; font-size: large;; margin-left: 150px">.CSV Processor</div>
+    <div id="drop_zone" ondrop="dropHandler(event);" ondragover="dragOverHandler(event);">
+      Drop .CSV here
+      <hr> Or click here to upload
+      <input type="file" id="csvFile" accept=".csv" style="display: none;" onchange="fileSelected(event);">
+    </div>
+    <div class="button-container">
+      <button id="dailySales" class="bold-button">Sort Daily Sales by Profit</button>
+      <button id="duplicatePOs" class="bold-button">Duplicate PO Audit</button>
+      <button id="salesProfit">Sales & Profit Report per Event</button>
+    </div>
+    <div id="log"></div>
+  </div>
+</body>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.2/FileSaver.min.js"></script>
+</html>
 
-  <script>
-    var lineBreakCount;
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.2/FileSaver.min.js"></script>
 
-    function fileSelected(ev) {
-      var file = ev.target.files[0]; // get the selected file
-      lineBreakCount = 4;
-      clearPreviousData(lineBreakCount)
-      logElement.innerHTML = ''; // Clear the log
-      log('<br>File uploaded = ' + file.name + '<br>'); // log the file name
-    }
+<script>
+  var lineBreakCount;
 
-    function dropHandler(ev) {
-      // Prevent default behavior (Prevent file from being opened)
-      ev.preventDefault();
-      lineBreakCount = 4;
-      clearPreviousData(lineBreakCount)
-      logElement.innerHTML = ''; // Clear the log
-      log('<br>File uploaded = ');
+  function fileSelected(ev) {
+    var file = ev.target.files[0]; // get the selected file
+    lineBreakCount = 4;
+    clearPreviousData(lineBreakCount)
+    logElement.innerHTML = ''; // Clear the log
+    log('<br>File uploaded = ' + file.name + '<br>'); // log the file name
+  }
 
-      if (ev.dataTransfer.items) {
-        // Use DataTransferItemList interface to access the file(s)
-        if (ev.dataTransfer.items[0].kind === 'file') {
-          var file = ev.dataTransfer.items[0].getAsFile();
-          log(file.name + '<br>');
-          // Create a new FileList and append the first file
-          let dt = new DataTransfer();
-          dt.items.add(file);
-          document.getElementById('csvFile').files = dt.files;
-        }
-      } else {
-        // Use DataTransfer interface to access the file(s)
-        log('... file[0].name = ' + ev.dataTransfer.files[0].name + '<br>');
+  function dropHandler(ev) {
+    // Prevent default behavior (Prevent file from being opened)
+    ev.preventDefault();
+    lineBreakCount = 4;
+    clearPreviousData(lineBreakCount)
+    logElement.innerHTML = ''; // Clear the log
+    log('<br>File uploaded = ');
+
+    if (ev.dataTransfer.items) {
+      // Use DataTransferItemList interface to access the file(s)
+      if (ev.dataTransfer.items[0].kind === 'file') {
+        var file = ev.dataTransfer.items[0].getAsFile();
+        log(file.name + '<br>');
         // Create a new FileList and append the first file
         let dt = new DataTransfer();
-        dt.items.add(ev.dataTransfer.files[0]);
+        dt.items.add(file);
         document.getElementById('csvFile').files = dt.files;
       }
+    } else {
+      // Use DataTransfer interface to access the file(s)
+      log('... file[0].name = ' + ev.dataTransfer.files[0].name + '<br>');
+      // Create a new FileList and append the first file
+      let dt = new DataTransfer();
+      dt.items.add(ev.dataTransfer.files[0]);
+      document.getElementById('csvFile').files = dt.files;
+    }
+  }
+
+  function dragOverHandler(ev) {
+    // Prevent default behavior (Prevent file from being opened)
+    ev.preventDefault();
+  }
+
+  document.getElementById('drop_zone').addEventListener('click', function () {
+    document.getElementById('csvFile').click();
+  });
+
+  const logElement = document.getElementById('log');
+  const log = (message) => {
+    logElement.innerHTML += '<strong>' + message + '</strong>';
+  };
+
+  document.getElementById('dailySales').addEventListener('click', processFile);
+  document.getElementById('duplicatePOs').addEventListener('click', processFile);
+  document.getElementById('salesProfit').addEventListener('click', processFile);
+
+  function processFile() {
+    lineBreakCount++;
+    clearPreviousData(lineBreakCount)
+
+    const file = document.getElementById('csvFile').files[0];
+    if (!file) {
+      alert("Please upload a .csv file");
+      return;
     }
 
-    function dragOverHandler(ev) {
-      // Prevent default behavior (Prevent file from being opened)
-      ev.preventDefault();
-    }
+    Papa.parse(file, {
+      header: true,
+      complete: (results) => {
+        if (this.id === 'dailySales') {
+          processDailySales(results);
+        } else if (this.id === 'duplicatePOs') {
+          processDuplicatePOs(results);
+        } else if (this.id === 'salesProfit') {
+          createReport(results);
+        }
+      }
+    });
+  }
 
-    document.getElementById('drop_zone').addEventListener('click', function () {
-      document.getElementById('csvFile').click();
+  function createReport(results) {
+    let data = results.data;
+    let aggregatedData = {};
+
+    data.forEach(row => {
+      let eventDate = row["Event Date"]; // Use column header "Event Date"
+      let subtotal = parseFloat(row["Subtotal"]); // Use column header "Subtotal"
+      let profit = parseFloat(row["Profit"]); // Use column header "Profit"
+
+      // Check if eventDate is defined and not empty
+      if (eventDate) {
+        if (!aggregatedData[eventDate]) {
+          aggregatedData[eventDate] = { subtotalSum: 0, profitSum: 0 };
+        }
+
+        aggregatedData[eventDate].subtotalSum += isNaN(subtotal) ? 0 : subtotal;
+        aggregatedData[eventDate].profitSum += isNaN(profit) ? 0 : profit;
+      }
     });
 
-    const logElement = document.getElementById('log');
-    const log = (message) => {
-      logElement.innerHTML += '<strong>' + message + '</strong>';
-    };
+    let csvData = Object.keys(aggregatedData).map(eventDate => ({
+      "event date": eventDate,
+      "subtotal sum": aggregatedData[eventDate].subtotalSum.toFixed(2),
+      "profit sum": aggregatedData[eventDate].profitSum.toFixed(2)
+    }));
 
-    document.getElementById('dailySales').addEventListener('click', processFile);
-    document.getElementById('duplicatePOs').addEventListener('click', processFile);
+    // Sort the data by event date in ascending order
+    csvData.sort((a, b) => new Date(a["event date"]) - new Date(b["event date"]));
 
-    function processFile() {
-      lineBreakCount++;
-      clearPreviousData(lineBreakCount)
+    const csv = Papa.unparse(csvData);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    saveAs(blob, "report.csv");
+    log('<br>Report created and downloaded');
+  }
 
-      const file = document.getElementById('csvFile').files[0];
-      if (!file) {
-        alert("Please upload a .csv file");
-        return;
-      }
+  function processDailySales(results) {
+    let data = results.data;
 
-      Papa.parse(file, {
-        header: true,
-        complete: this.id === 'dailySales' ? processDailySales : processDuplicatePOs
-      });
-    }
+    // List of columns to keep
+    const columnsToKeep = [
+      "Event", "Venue", "City", "Day", "Event Date", "Event Time", "Quantity",
+      "Section", "Row", "Seat From", "Seat To", "Total", "Cost", "Profit"
+    ];
 
-    function processDailySales(results) {
-      let data = results.data;
-
-      // Remove unwanted columns
-      data = data.map(row => {
-        Object.keys(row).forEach(key => {
-          const colIndex = results.meta.fields.indexOf(key);
-          if ((colIndex >= 0 && colIndex <= 9) || (colIndex >= 21 && colIndex <= 35) || (colIndex >= 39 && colIndex <= 43)) {
-            delete row[key];
-          }
-        });
-        row.Profit = parseFloat(row.Profit);
-        return row;
-      }).filter(row => !isNaN(row.Profit) && Number(row['Cost']) !== 0); // Remove rows with 'Profit' as NaN and 'Cost' as 0
-
-      // Sort by 'Profit'
-      data.sort((a, b) => b.Profit - a.Profit);
-
-      // Get the top 12 rows
-      const topRows = data.slice(0, 11);
-
-      log('<br>Daily sales sorted');
-
-      // Create a table for the top rows
-      createTable(topRows);
-
-      // Sort by 'Profit' in ascending order
-      data.sort((a, b) => a.Profit - b.Profit);
-
-      // Get the bottom 12 rows
-      const bottomRows = data.slice(0, 11);
-
-      // Create a table for the bottom rows
-      createTable(bottomRows);
-    }
-
-    function processDuplicatePOs(results) {
-      let data = results.data.filter(row => row['Total Cost'] > 0); // Remove rows with 'Total Cost' <= 0
-      const duplicateMap = {}; // Map to track duplicates
-      let duplicates = []; // Array to store duplicate rows
-
-      // Check each row for duplicates
-      data.forEach((row, index) => {
-        delete row['PO Hyperlink'];
-
-        // Convert 'Seat From' and 'Seat To' to numbers
-        const seatFrom = Number(row['Seat From']);
-        const seatTo = Number(row['Seat To']);
-
-        // Iterate over the range of seats
-        for (let seat = seatFrom; seat <= seatTo; seat++) {
-          // Convert the seat number to a string and pad it with zeros if necessary
-          const seatString = seat.toString().padStart(2, '0');
-
-          // Create a key for the current row
-          const rowString = JSON.stringify({
-            'Event Name': row['Event Name'],
-            'Event Date/Time': row['Event Date/Time'],
-            'Section': row['Section'],
-            'Row': row['Row'],
-            'Seat': seatString
-          });
-
-          // If the row is already in the map, mark it as a duplicate
-          if (duplicateMap[rowString]) {
-            // Add the original row to the duplicates array if it hasn't been added yet
-            if (!duplicateMap[rowString]['isDuplicate']) {
-              duplicateMap[rowString]['isDuplicate'] = true;
-              duplicates.push(data[duplicateMap[rowString]['index']]);
-            }
-
-            // Add the current row to the duplicates array
-            duplicates.push(row);
-            break;
-          } else {
-            // Otherwise, add it to the map
-            duplicateMap[rowString] = { 'index': index, 'Seat': seatString };
-          }
+    // Remove unwanted columns
+    data = data.map(row => {
+      Object.keys(row).forEach(key => {
+        if (!columnsToKeep.includes(key)) {
+          delete row[key];
         }
       });
+      row.Profit = parseFloat(row.Profit);
+      return row;
+    }).filter(row => !isNaN(row.Profit) && Number(row['Cost']) !== 0); // Remove rows with 'Profit' as NaN and 'Cost' as 0
 
-      if (duplicates.length > 0) {
-        log('<br>Duplicate seats found!!!');
-        createTable(duplicates);
-      } else {
-        log(`<br>No duplicates found on ${new Date().toLocaleString("en-US", {timeZone: "America/Los_Angeles"})} PST`);
-      }
-    }
+    // Sort by 'Profit'
+    data.sort((a, b) => b.Profit - a.Profit);
 
-    function createTable(data) {
-      const table = document.createElement('table');
-      //table.style.width = '100%';
-      table.style.borderCollapse = 'collapse';
+    // Get the top 12 rows
+    const topRows = data.slice(0, 12);
 
-      const thead = document.createElement('thead');
-      const headerRow = document.createElement('tr');
-      Object.keys(data[0]).forEach(key => {
-        const th = document.createElement('th');
-        th.textContent = key;
-        th.style.border = '1px solid black';
-        th.style.padding = '5px';
-        headerRow.appendChild(th);
-      });
-      thead.appendChild(headerRow);
-      table.appendChild(thead);
+    log('<br>Daily sales sorted');
 
-      const tbody = document.createElement('tbody');
-      data.forEach(row => {
-        const tr = document.createElement('tr');
-        Object.values(row).forEach(value => {
-          const td = document.createElement('td');
-          td.textContent = value;
-          td.style.border = '1px solid black';
-          td.style.padding = '5px';
-          tr.appendChild(td);
+    // Create a table for the top rows
+    createTable(topRows);
+
+    // Sort by 'Profit' in ascending order
+    data.sort((a, b) => a.Profit - b.Profit);
+
+    // Get the bottom 12 rows
+    const bottomRows = data.slice(0, 12);
+
+    // Create a table for the bottom rows
+    createTable(bottomRows);
+  }
+
+  function processDuplicatePOs(results) {
+    let data = results.data.filter(row => row['Total Cost'] > 0); // Remove rows with 'Total Cost' <= 0
+    const duplicateMap = {}; // Map to track duplicates
+    let duplicates = []; // Array to store duplicate rows
+
+    // Check each row for duplicates
+    data.forEach((row, index) => {
+      delete row['PO Hyperlink'];
+
+      // Convert 'Seat From' and 'Seat To' to numbers
+      const seatFrom = Number(row['Seat From']);
+      const seatTo = Number(row['Seat To']);
+
+      // Iterate over the range of seats
+      for (let seat = seatFrom; seat <= seatTo; seat++) {
+        // Convert the seat number to a string and pad it with zeros if necessary
+        const seatString = seat.toString().padStart(2, '0');
+
+        // Create a key for the current row
+        const rowString = JSON.stringify({
+          'Event Name': row['Event Name'],
+          'Event Date/Time': row['Event Date/Time'],
+          'Section': row['Section'],
+          'Row': row['Row'],
+          'Seat': seatString
         });
-        tbody.appendChild(tr);
+
+        // If the row is already in the map, mark it as a duplicate
+        if (duplicateMap[rowString]) {
+          // Add the original row to the duplicates array if it hasn't been added yet
+          if (!duplicateMap[rowString]['isDuplicate']) {
+            duplicateMap[rowString]['isDuplicate'] = true;
+            duplicates.push(data[duplicateMap[rowString]['index']]);
+          }
+
+          // Add the current row to the duplicates array
+          duplicates.push(row);
+          break;
+        } else {
+          // Otherwise, add it to the map
+          duplicateMap[rowString] = { 'index': index, 'Seat': seatString };
+        }
+      }
+    });
+
+    if (duplicates.length > 0) {
+      log('<br>Duplicate seats found!!!');
+      createTable(duplicates);
+    } else {
+      log(`<br>No duplicates found on ${new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles" })} PST`);
+    }
+  }
+
+  function createTable(data) {
+    const container = document.createElement('div');
+    container.style.marginLeft = '25px'; // Move the table 25px to the right
+
+    const table = document.createElement('table');
+    table.style.borderCollapse = 'collapse';
+
+    const thead = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+    Object.keys(data[0]).forEach(key => {
+      const th = document.createElement('th');
+      th.textContent = key;
+      th.style.border = '1px solid black';
+      th.style.padding = '5px';
+      headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+    data.forEach(row => {
+      const tr = document.createElement('tr');
+      Object.values(row).forEach(value => {
+        const td = document.createElement('td');
+        td.textContent = value;
+        td.style.border = '1px solid black';
+        td.style.padding = '5px';
+        tr.appendChild(td);
       });
-      table.appendChild(tbody);
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
 
-      const br = document.createElement('br'); // create a br element
-      document.body.appendChild(br); // append the br to the body
-      document.body.appendChild(table);
-    }
+    const br = document.createElement('br'); // create a br element
+    container.appendChild(br); // append the br to the container
+    container.appendChild(table); // append the table to the container
+    document.body.appendChild(container); // append the container to the body
+  }
 
-    function clearPreviousData(lineCount) {
-      // Remove any previous tables
-      const tables = document.getElementsByTagName('table');
-      while (tables[0]) tables[0].parentNode.removeChild(tables[0]);
+  function clearPreviousData(lineCount) {
+    // Remove any previous tables
+    const tables = document.getElementsByTagName('table');
+    while (tables[0]) tables[0].parentNode.removeChild(tables[0]);
 
-      // Remove any previous line breaks
-      const lineBreaks = document.getElementsByTagName('br');
-      while (lineBreaks[lineCount])
-        lineBreaks[lineCount].parentNode.removeChild(lineBreaks[lineCount]);
-    }
+    // Remove any previous line breaks
+    const lineBreaks = document.getElementsByTagName('br');
+    while (lineBreaks[lineCount])
+      lineBreaks[lineCount].parentNode.removeChild(lineBreaks[lineCount]);
+  }
 
-    function saveCSV(data, filename) {
-      const csv = Papa.unparse(data);
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-      saveAs(blob, filename);
-    }
-  </script>
+  function saveCSV(data, filename) {
+    const csv = Papa.unparse(data);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    saveAs(blob, filename);
+  }
+</script>
 </body>
 
 </html>
